@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#080808">
+<title>Calisthenics Program</title>
+<link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;Calisthenics Program&quot;,&quot;short_name&quot;:&quot;Workout&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;#080808&quot;,&quot;theme_color&quot;:&quot;#080808&quot;,&quot;start_url&quot;:&quot;.&quot;}">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:#080808;color:#e0e0e0;font-family:'Courier New',monospace;min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-thumb{background:#2a2a2a}
+button{font-family:'Courier New',monospace;cursor:pointer;border:none;background:none}
+a{text-decoration:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+.spinning{animation:spin 0.8s linear infinite;display:inline-block}
+.tab-bar{position:sticky;top:0;z-index:50;background:#080808;border-bottom:1px solid #161616;padding:14px 16px 0}
+.tab-row{display:flex;gap:0;margin-top:10px}
+.tab-btn{padding:8px 13px;font-size:8px;letter-spacing:2px;text-transform:uppercase;font-family:inherit;background:none;border:none;border-bottom:2px solid transparent;color:#3a3a3a;cursor:pointer;margin-bottom:-1px;transition:all 0.2s}
+.tab-btn.active{border-bottom-color:var(--pc);color:var(--pc)}
+.scroll-row{display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.scroll-row::-webkit-scrollbar{display:none}
+.phase-btn{flex-shrink:0;padding:6px 11px;cursor:pointer;transition:all 0.2s;background:transparent;border:1px solid #1e1e1e}
+.phase-btn.active{border-color:var(--pc);background:var(--pbg)}
+.day-btn{flex-shrink:0;padding:6px 10px;cursor:pointer;background:transparent;border:1px solid #1a1a1a}
+.day-btn.active{background:#111;border-color:var(--pc)}
+.ex-row{padding:13px 0;border-bottom:1px solid #0e0e0e;display:flex;flex-direction:column;gap:0}
+.ex-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.how-btn{flex-shrink:0;background:transparent;border:1px solid var(--pc33);color:var(--pcaa);font-size:9px;letter-spacing:1px;padding:5px 9px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px}
+.set-dots{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:9px}
+.dot{width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:9px;font-family:inherit;border:1px solid #252525;color:#2e2e2e;background:transparent;transition:all 0.2s}
+.dot.done{border-color:var(--pc);background:var(--pc2a);color:var(--pc)}
+.set-done-btn{padding:5px 11px;font-size:9px;letter-spacing:1px;font-family:inherit;border:1px solid var(--pc33);background:var(--pc18);color:var(--pc);cursor:pointer}
+.complete-badge{font-size:9px;letter-spacing:1px;color:var(--pc)}
+.reset-btn{padding:3px 7px;font-size:9px;font-family:inherit;background:transparent;border:1px solid #222;color:#444;cursor:pointer}
+.timer-wrap{background:#080808;border:1px solid #1e1e1e;padding:12px 14px;margin-top:8px;display:flex;gap:14px;align-items:center;transition:border-color 0.3s}
+.timer-wrap.running{border-color:var(--pc55)}
+.timer-controls{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
+.timer-btn{padding:5px 11px;font-size:9px;letter-spacing:2px;font-family:inherit;cursor:pointer}
+.timer-start{background:var(--pc1a);border:1px solid var(--pc44);color:var(--pc)}
+.timer-stop{background:#200808;border:1px solid #5a1515;color:#f87171}
+.timer-adj{background:transparent;border:1px solid #1e1e1e;color:#444;padding:5px 8px;font-size:9px;font-family:inherit}
+.timer-close{background:transparent;border:1px solid #1e1e1e;color:#444;padding:5px 9px;font-size:9px;font-family:inherit}
+.modal-overlay{position:fixed;inset:0;background:#000000dd;z-index:999;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal-box{background:#0d0d0d;border:1px solid var(--pc44);max-width:360px;width:100%;padding:18px}
+.modal-header{display:flex;justify-content:space-between;margin-bottom:12px}
+.modal-close{background:none;border:none;color:#555;font-size:20px;cursor:pointer;padding:0;line-height:1}
+.modal-img{width:100%;max-height:260px;object-fit:contain;background:#f8f8f8;display:block}
+.modal-noimg{height:160px;background:#111;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#444;font-size:11px}
+.yt-link{display:block;margin-top:12px;text-align:center;font-size:9px;letter-spacing:2px;color:var(--pcaa);padding-top:12px;border-top:1px solid #1e1e1e}
+.section{max-width:580px;margin:0 auto;padding:16px 14px 80px}
+.phase-blurb{padding:9px 13px;margin-bottom:12px}
+.day-header{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:12px;border-bottom:1px solid #141414;margin-bottom:12px}
+.tag-badge{font-size:7px;letter-spacing:1px;padding:2px 7px}
+.notes-box{margin-top:14px;padding:11px 13px;background:#0a0a0a;border:1px solid #141414}
+.rest-guide{margin-top:10px;padding:11px 13px;background:#0a0a0a;border:1px solid #141414;display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.rest-cell{padding:6px 9px}
+.milestone-row{display:flex;gap:10px;margin-bottom:14px;align-items:flex-start}
+.milestone-dot{width:9px;height:9px;border-radius:50%;margin-top:15px;flex-shrink:0;z-index:1}
+.milestone-card{flex:1;padding:10px 12px;background:#0c0c0c;border:1px solid #161616;font-size:11px;color:#bbb;line-height:1.6}
+.ladder-step{font-size:9px;padding:3px 7px;white-space:nowrap;flex-shrink:0}
+.ladder-row{display:flex;align-items:center;gap:3px;overflow-x:auto;padding-bottom:3px;scrollbar-width:none}
+.ladder-row::-webkit-scrollbar{display:none}
+.diet-card{padding:13px;margin-bottom:7px;background:#0c0c0c;border:1px solid #161616;display:flex;gap:12px;align-items:flex-start}
+
+.today-hero{background:linear-gradient(135deg,var(--pbg) 0%,#080808 100%);border:1px solid var(--pc22);padding:18px 16px;margin-bottom:14px;position:relative;overflow:hidden}
+.today-hero::before{content:'';position:absolute;top:-40px;right:-40px;width:120px;height:120px;border-radius:50%;background:var(--pc);opacity:0.04;pointer-events:none}
+.week-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:14px}
+.week-cell{padding:6px 2px;text-align:center;border:1px solid #141414;background:#0a0a0a;cursor:default}
+.week-cell.today{border-color:var(--pc);background:var(--pc0d)}
+.week-cell.workout-day{cursor:pointer}
+.week-cell.rest-day{opacity:0.5}
+.week-cell.past{opacity:0.35}
+.week-cell.future{opacity:0.6}
+.week-cell.before-program{opacity:0.2}
+.week-cell.after-program{opacity:0.2}
+.prog-badge{display:inline-block;padding:2px 8px;font-size:8px;letter-spacing:2px;margin-top:6px}
+.today-goto{padding:8px 16px;font-size:9px;letter-spacing:2px;font-family:inherit;cursor:pointer;margin-top:12px;display:inline-block}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ── DATA ─────────────────────────────────────────────────────────────────────
+const PHASES = [
+  { id:1, name:"FOUNDATION", weeks:"Weeks 1–5 · Apr–May", color:"#4ade80", bg:"#041a0e",
+    goal:"Build base strength, establish movement patterns, begin caloric deficit",
+    days:[
+      { label:"DAY 1", type:"Push + Core", tag:"STRENGTH", notes:"Rest 60–90s between sets. Focus on form over reps.", exercises:[
+        {name:"Warm-up",sets:"5 min",reps:"dynamic stretching",rest:0},
+        {name:"Push-ups (diamond/wide/standard)",sets:"4",reps:"8–12 each",rest:90},
+        {name:"Pike Push-ups",sets:"3",reps:"8–10",rest:90},
+        {name:"Dips (chair or parallel bars)",sets:"3",reps:"8–12",rest:90},
+        {name:"Plank",sets:"3",reps:"30–45 sec",rest:60},
+        {name:"Hollow Body Hold",sets:"3",reps:"20–30 sec",rest:60},
+        {name:"Leg Raises (lying)",sets:"3",reps:"10–15",rest:60},
+        {name:"Mountain Climbers",sets:"3",reps:"20 each leg",rest:45},
+      ]},
+      { label:"DAY 2", type:"Pull + Skill Intro", tag:"SKILL", notes:"Skill work at the END when rested. Quality over quantity.", exercises:[
+        {name:"Warm-up",sets:"5 min",reps:"band pull-aparts, shoulder rotations",rest:0},
+        {name:"Pull-ups (assisted if needed)",sets:"4",reps:"5–8",rest:90},
+        {name:"Australian Rows (low bar/table)",sets:"3",reps:"10–15",rest:75},
+        {name:"Dead Hang",sets:"3",reps:"20–30 sec",rest:60},
+        {name:"Scapular Pull-ups",sets:"3",reps:"10",rest:75},
+        {name:"L-sit Tuck Hold (floor)",sets:"3",reps:"10–15 sec",rest:120},
+        {name:"Wrist Conditioning",sets:"—",reps:"5 min circles/stretches",rest:0},
+      ]},
+      { label:"DAY 3", type:"Legs + Cardio Core", tag:"CONDITIONING", notes:"Keep rest short (45s) to maintain elevated heart rate for fat burning.", exercises:[
+        {name:"Jump Rope / Jogging",sets:"10 min",reps:"warm-up",rest:0},
+        {name:"Pistol Squat Progression (assisted)",sets:"3",reps:"5 each leg",rest:75},
+        {name:"Bulgarian Split Squats",sets:"3",reps:"10 each",rest:60},
+        {name:"Jump Squats",sets:"3",reps:"15",rest:45},
+        {name:"Reverse Crunches",sets:"4",reps:"15",rest:45},
+        {name:"Bicycle Crunches",sets:"3",reps:"20 each side",rest:45},
+        {name:"Ab Wheel (or hands walkout)",sets:"3",reps:"8–10",rest:60},
+        {name:"Burpees",sets:"3",reps:"10",rest:45},
+      ]},
+      { label:"DAY 4", type:"Active Recovery", tag:"RECOVERY", notes:"This day matters. Skipping recovery = slower progress.", exercises:[
+        {name:"20–30 min walk / light jog",sets:"—",reps:"—",rest:0},
+        {name:"Full body stretch routine",sets:"20 min",reps:"hold each 30–60s",rest:0},
+        {name:"Thoracic spine mobility",sets:"—",reps:"5 min",rest:0},
+        {name:"Hip flexor stretches",sets:"—",reps:"2 min each side",rest:0},
+      ]},
+      { label:"DAY 5", type:"Full Body + Handstand Intro", tag:"SKILL", notes:"Handstand work: focus on wrist alignment and straight body line against the wall.", exercises:[
+        {name:"Warm-up",sets:"5 min",reps:"wrist prep, shoulder circles",rest:0},
+        {name:"Pull-ups",sets:"3",reps:"max reps",rest:90},
+        {name:"Handstand Wall Hold",sets:"4",reps:"20–30 sec",rest:120},
+        {name:"Crow Pose Hold",sets:"3",reps:"10–15 sec",rest:120},
+        {name:"Dragon Flag Negatives",sets:"3",reps:"5 slow",rest:90},
+        {name:"Side Plank",sets:"3",reps:"30 sec each",rest:60},
+      ]},
+    ]
+  },
+  { id:2, name:"PROGRESSION", weeks:"Weeks 6–10 · May–Jun", color:"#60a5fa", bg:"#060f1e",
+    goal:"Harder variations, introduce muscle-up progressions, visible body comp changes begin",
+    days:[
+      { label:"DAY 1", type:"Push Power + Core", tag:"STRENGTH", notes:"Increase explosive work — this builds the power needed for muscle-ups.", exercises:[
+        {name:"Explosive Push-ups (clap or archer)",sets:"4",reps:"6–8",rest:90},
+        {name:"Pseudo Planche Push-ups",sets:"3",reps:"8",rest:120},
+        {name:"Parallel Bar Dips",sets:"4",reps:"10–15",rest:90},
+        {name:"Decline Push-ups",sets:"3",reps:"12",rest:75},
+        {name:"Hollow Body Rocks",sets:"4",reps:"15–20",rest:60},
+        {name:"Toes-to-Bar (or hanging knee raises)",sets:"3",reps:"10–12",rest:75},
+        {name:"L-sit Hold (parallettes or floor)",sets:"4",reps:"10–15 sec",rest:120},
+      ]},
+      { label:"DAY 2", type:"Muscle-Up Progression", tag:"SKILL", notes:"Muscle-up key: you need chest-to-bar FIRST. Don't rush the full movement.", exercises:[
+        {name:"Pull-ups (weighted or L-sit)",sets:"5",reps:"5–7",rest:120},
+        {name:"Chest-to-Bar Pull-ups",sets:"4",reps:"5–8",rest:120},
+        {name:"Explosive Pull-ups",sets:"4",reps:"4–6",rest:120},
+        {name:"Bar Dips",sets:"4",reps:"10",rest:90},
+        {name:"Negative Muscle-ups",sets:"3",reps:"3–5",rest:120},
+        {name:"Scapular Shrugs",sets:"3",reps:"10",rest:60},
+        {name:"Dead Hang",sets:"2",reps:"30–45 sec",rest:60},
+      ]},
+      { label:"DAY 3", type:"Legs + HIIT", tag:"CONDITIONING", notes:"HIIT is your primary fat-burning tool alongside the deficit.", exercises:[
+        {name:"HIIT Circuit (20s on / 10s off x 8 rounds)",sets:"—",reps:"burpees, jump squats, high knees",rest:0},
+        {name:"Pistol Squat Progression",sets:"4",reps:"6 each leg",rest:75},
+        {name:"Nordic Hamstring Curls",sets:"3",reps:"5–8",rest:90},
+        {name:"Box Jumps",sets:"3",reps:"10",rest:60},
+      ]},
+      { label:"DAY 4", type:"Active Recovery", tag:"RECOVERY", notes:"Zone 2 cardio burns fat without taxing recovery.", exercises:[
+        {name:"30 min easy jog or bike",sets:"—",reps:"zone 2 cardio",rest:0},
+        {name:"Full body yoga or stretch session",sets:"20 min",reps:"—",rest:0},
+        {name:"Hip flexor stretches",sets:"—",reps:"2 min each side",rest:0},
+      ]},
+      { label:"DAY 5", type:"Handstand + Flag Intro", tag:"SKILL", notes:"Handstand: aim for 3–5 sec freestanding by end of this phase.", exercises:[
+        {name:"Freestanding Handstand Attempts",sets:"10 min",reps:"kick-ups, hold attempts",rest:120},
+        {name:"Handstand Wall Hold",sets:"4",reps:"30–45 sec",rest:120},
+        {name:"Human Flag Tuck Hold",sets:"3",reps:"5–10 sec",rest:120},
+        {name:"Side Lever Tuck",sets:"3",reps:"5–8 sec",rest:120},
+        {name:"Straddle Planche Lean",sets:"3",reps:"10–15 sec",rest:120},
+      ]},
+    ]
+  },
+  { id:3, name:"INTENSIFICATION", weeks:"Weeks 11–15 · Jul", color:"#f97316", bg:"#180a02",
+    goal:"Skill consolidation, muscle definition visible, push hardest training volume",
+    days:[
+      { label:"DAY 1", type:"Upper Power", tag:"STRENGTH", notes:"By week 13 you should be hitting your first clean muscle-up.", exercises:[
+        {name:"Muscle-up Attempts (full)",sets:"5",reps:"1–3 reps (or max)",rest:120},
+        {name:"Weighted Pull-ups",sets:"4",reps:"5 (add 10–20 lbs)",rest:120},
+        {name:"Ring Dips or Deep Bar Dips",sets:"4",reps:"10–12",rest:90},
+        {name:"Archer Push-ups",sets:"3",reps:"8 each side",rest:90},
+        {name:"Front Lever Tuck (rings or bar)",sets:"4",reps:"8–10 sec",rest:120},
+        {name:"L-sit to Tuck-to-L progression",sets:"4",reps:"10–15 sec",rest:120},
+      ]},
+      { label:"DAY 2", type:"Handstand Intensive", tag:"SKILL", notes:"Aim for 5–10 sec freestanding by week 15.", exercises:[
+        {name:"Handstand Kick-up Practice",sets:"15 min",reps:"dedicated practice",rest:0},
+        {name:"Wall Handstand (nose-to-wall)",sets:"5",reps:"45–60 sec",rest:120},
+        {name:"Handstand Shoulder Taps",sets:"3",reps:"10 taps",rest:120},
+        {name:"Pike Compression (sitting)",sets:"4",reps:"30 sec hold",rest:60},
+        {name:"Wrist Push-ups",sets:"3",reps:"15",rest:60},
+        {name:"Crow to Headstand Transition",sets:"5",reps:"practice reps",rest:120},
+      ]},
+      { label:"DAY 3", type:"Legs + Core Shred", tag:"CONDITIONING", notes:"Dragon flags and hanging windshield wipers = visible abs.", exercises:[
+        {name:"Tabata Sprints or Jump Rope",sets:"8 rounds",reps:"20s max / 10s rest",rest:0},
+        {name:"Pistol Squats (full)",sets:"4",reps:"6–8 each",rest:75},
+        {name:"Single-Leg Glute Bridge",sets:"3",reps:"15 each",rest:45},
+        {name:"Dragon Flags",sets:"4",reps:"5–8",rest:90},
+        {name:"Windshield Wipers (hanging)",sets:"3",reps:"10 each side",rest:75},
+        {name:"Ab Wheel Rollout (full)",sets:"3",reps:"8–10",rest:75},
+      ]},
+      { label:"DAY 4", type:"Active Recovery", tag:"RECOVERY", notes:"Your muscles are under serious stress now. Treat this day as sacred.", exercises:[
+        {name:"30–40 min walk/jog",sets:"—",reps:"—",rest:0},
+        {name:"Hip and shoulder mobility",sets:"20 min",reps:"—",rest:0},
+        {name:"Hip flexor stretches",sets:"—",reps:"2 min each side",rest:0},
+      ]},
+      { label:"DAY 5", type:"Human Flag + Full Skill", tag:"SKILL", notes:"Flag: tuck → one leg extended → straddle → full. Most reach straddle this phase.", exercises:[
+        {name:"Human Flag Tuck Hold",sets:"5",reps:"8–12 sec each side",rest:120},
+        {name:"Human Flag One-Leg Extension",sets:"3",reps:"5–8 sec",rest:120},
+        {name:"Straddle Flag Attempt",sets:"3",reps:"3–5 sec",rest:120},
+        {name:"Side Plank",sets:"3",reps:"60 sec each",rest:75},
+        {name:"One-Arm Hang",sets:"3",reps:"10–15 sec each arm",rest:90},
+        {name:"Muscle-up Practice",sets:"3",reps:"1–3 clean reps",rest:120},
+      ]},
+    ]
+  },
+  { id:4, name:"PEAK", weeks:"Weeks 16–20 · Aug–Sep", color:"#e879f9", bg:"#100012",
+    goal:"Consolidate all skills, leanest body composition, unrecognizable by September 8th",
+    days:[
+      { label:"DAY 1", type:"Max Strength", tag:"STRENGTH", notes:"You're peaking now. Push weight, push reps.", exercises:[
+        {name:"Weighted Pull-ups",sets:"5",reps:"3–5 (heaviest)",rest:120},
+        {name:"Muscle-ups",sets:"5",reps:"2–4 clean reps",rest:120},
+        {name:"Ring Push-ups or Ring Dips",sets:"4",reps:"10–12",rest:90},
+        {name:"One-Arm Pull-up Negatives",sets:"3",reps:"3–5 each arm",rest:120},
+        {name:"Dragon Flag",sets:"4",reps:"8–10",rest:90},
+        {name:"Full L-sit Hold",sets:"4",reps:"15–20 sec",rest:120},
+      ]},
+      { label:"DAY 2", type:"Skill Mastery", tag:"SKILL", notes:"By week 18: clean muscle-ups, 8–10s freestanding HS, straddle flag.", exercises:[
+        {name:"Freestanding Handstand",sets:"20 min",reps:"aim 10+ sec holds",rest:0},
+        {name:"Human Flag Full Attempts",sets:"5",reps:"3–8 sec each side",rest:120},
+        {name:"L-sit to Handstand (parallettes)",sets:"5",reps:"practice reps",rest:120},
+        {name:"Planche Lean (advanced)",sets:"3",reps:"15–20 sec",rest:120},
+        {name:"Crow to Handstand flow",sets:"5",reps:"transitions",rest:120},
+      ]},
+      { label:"DAY 3", type:"Shred Circuit", tag:"CONDITIONING", notes:"Final fat-burning push before September. Keep deficit sharp.", exercises:[
+        {name:"HIIT Circuit (20s on / 10s off x 8 rounds)",sets:"30 min",reps:"1 min hard / 1 min jog x 15",rest:0},
+        {name:"Hanging Windshield Wipers",sets:"4",reps:"12 each side",rest:60},
+        {name:"Dragon Flags",sets:"4",reps:"8–10",rest:90},
+        {name:"Pistol Squats",sets:"3",reps:"10 each",rest:60},
+        {name:"Burpee Pull-ups",sets:"3",reps:"10",rest:60},
+      ]},
+      { label:"DAY 4", type:"Active Recovery", tag:"RECOVERY", notes:"Final weeks — recovery is how you look your best.", exercises:[
+        {name:"Long walk (45 min)",sets:"—",reps:"—",rest:0},
+        {name:"Full body yoga or stretch session",sets:"30 min",reps:"—",rest:0},
+      ]},
+      { label:"DAY 5", type:"Showcase Day", tag:"SKILL", notes:"Weekly test day. Measure progress, film yourself, celebrate how far you have come.", exercises:[
+        {name:"Muscle-ups",sets:"1",reps:"max clean reps",rest:120},
+        {name:"Freestanding Handstand",sets:"—",reps:"hold attempts",rest:120},
+        {name:"Human Flag Full Attempts",sets:"—",reps:"max time each side",rest:120},
+        {name:"Full L-sit Hold",sets:"3",reps:"20+ sec",rest:90},
+        {name:"Dragon Flag",sets:"3",reps:"max hold",rest:90},
+      ]},
+    ]
+  },
+];
+
+const TAG = {
+  STRENGTH:{bg:"#0a1a10",text:"#4ade80",border:"#134d23"},
+  SKILL:{bg:"#0a0a20",text:"#818cf8",border:"#2d2b7a"},
+  CONDITIONING:{bg:"#1a0d00",text:"#fb923c",border:"#7c2d12"},
+  RECOVERY:{bg:"#0a1520",text:"#38bdf8",border:"#075985"},
+};
+
+const SEARCH = {
+  "Push-ups (diamond/wide/standard)":"push up","Pike Push-ups":"pike push up",
+  "Dips (chair or parallel bars)":"dips","Plank":"plank","Hollow Body Hold":"hollow body",
+  "Leg Raises (lying)":"leg raise","Mountain Climbers":"mountain climber",
+  "Pull-ups (assisted if needed)":"pull up","Australian Rows (low bar/table)":"australian row",
+  "Dead Hang":"dead hang","Scapular Pull-ups":"scapular pull up","L-sit Tuck Hold (floor)":"l sit",
+  "Jump Rope / Jogging":"jump rope","Pistol Squat Progression (assisted)":"pistol squat",
+  "Bulgarian Split Squats":"bulgarian split squat","Jump Squats":"jump squat",
+  "Reverse Crunches":"reverse crunch","Bicycle Crunches":"bicycle crunch",
+  "Ab Wheel (or hands walkout)":"ab wheel rollout","Burpees":"burpee",
+  "Pull-ups":"pull up","Handstand Wall Hold":"handstand","Crow Pose Hold":"crow pose",
+  "Dragon Flag Negatives":"dragon flag","Side Plank":"side plank",
+  "Explosive Push-ups (clap or archer)":"clap push up","Pseudo Planche Push-ups":"planche push up",
+  "Parallel Bar Dips":"parallel bar dip","Decline Push-ups":"decline push up",
+  "Hollow Body Rocks":"hollow body","Toes-to-Bar (or hanging knee raises)":"toes to bar",
+  "L-sit Hold (parallettes or floor)":"l sit","Pull-ups (weighted or L-sit)":"pull up",
+  "Chest-to-Bar Pull-ups":"chest to bar pull up","Explosive Pull-ups":"explosive pull up",
+  "Bar Dips":"bar dip","Negative Muscle-ups":"muscle up","Scapular Shrugs":"scapular shrug",
+  "Pistol Squat Progression":"pistol squat","Nordic Hamstring Curls":"nordic hamstring curl",
+  "Box Jumps":"box jump","Freestanding Handstand Attempts":"handstand",
+  "Human Flag Tuck Hold":"human flag","Side Lever Tuck":"human flag",
+  "Straddle Planche Lean":"planche lean","Muscle-up Attempts (full)":"muscle up",
+  "Weighted Pull-ups":"pull up","Ring Dips or Deep Bar Dips":"ring dip",
+  "Archer Push-ups":"archer push up","Front Lever Tuck (rings or bar)":"front lever",
+  "L-sit to Tuck-to-L progression":"l sit","Handstand Kick-up Practice":"handstand",
+  "Wall Handstand (nose-to-wall)":"handstand","Handstand Shoulder Taps":"handstand shoulder tap",
+  "Pike Compression (sitting)":"pike stretch","Wrist Push-ups":"wrist push up",
+  "Crow to Headstand Transition":"crow pose","Tabata Sprints or Jump Rope":"sprint",
+  "Pistol Squats (full)":"pistol squat","Single-Leg Glute Bridge":"single leg glute bridge",
+  "Dragon Flags":"dragon flag","Windshield Wipers (hanging)":"windshield wiper",
+  "Ab Wheel Rollout (full)":"ab wheel rollout","Human Flag One-Leg Extension":"human flag",
+  "Straddle Flag Attempt":"human flag","One-Arm Hang":"dead hang","Muscle-up Practice":"muscle up",
+  "Muscle-ups":"muscle up","Ring Push-ups or Ring Dips":"ring dip",
+  "One-Arm Pull-up Negatives":"pull up","Dragon Flag":"dragon flag","Full L-sit Hold":"l sit",
+  "Freestanding Handstand":"handstand","Human Flag Full Attempts":"human flag",
+  "L-sit to Handstand (parallettes)":"l sit","Planche Lean (advanced)":"planche lean",
+  "Crow to Handstand flow":"handstand","Hanging Windshield Wipers":"windshield wiper",
+  "Pistol Squats":"pistol squat","Burpee Pull-ups":"burpee",
+  "HIIT Circuit (20s on / 10s off x 8 rounds)":"burpee",
+};
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let state = { pi:0, di:0, tab:"today", modal:null, setsDone:{}, timers:{} };
+let timerIntervals = {};
+const imgCache = {};
+
+function getPhase(){ return PHASES[state.pi]; }
+function getDay(){ return getPhase().days[state.di]; }
+function pc(){ return getPhase().color; }
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function setCSSVars(){
+  const c = pc();
+  document.documentElement.style.setProperty('--pc', c);
+  document.documentElement.style.setProperty('--pbg', getPhase().bg);
+  const hex2 = c + '33'; const hex3 = c + 'aa';
+  const hex4 = c + '1a'; const hex5 = c + '44';
+  const hex6 = c + '55'; const hex7 = c + '18';
+  const hex8 = c + '2a';
+  document.documentElement.style.setProperty('--pc33', hex2);
+  document.documentElement.style.setProperty('--pcaa', hex3);
+  document.documentElement.style.setProperty('--pc1a', hex4);
+  document.documentElement.style.setProperty('--pc44', hex5);
+  document.documentElement.style.setProperty('--pc55', hex6);
+  document.documentElement.style.setProperty('--pc18', hex7);
+  document.documentElement.style.setProperty('--pc2a', hex8);
+}
+
+function render(){
+  setCSSVars();
+  document.getElementById('app').innerHTML = buildApp();
+  attachEvents();
+}
+
+function buildApp(){
+  return `
+    ${buildHeader()}
+    <div class="section">
+      ${state.tab === 'today' ? buildToday() : ''}
+      ${state.tab === 'workout' ? buildWorkout() : ''}
+      ${state.tab === 'diet' ? buildDiet() : ''}
+      ${state.tab === 'milestones' ? buildMilestones() : ''}
+    </div>
+    ${state.modal ? buildModal() : ''}
+  `;
+}
+
+function buildHeader(){
+  const p = getPhase();
+  return `<div class="tab-bar">
+    <div style="max-width:580px;margin:0 auto">
+      <div style="display:flex;justify-content:space-between;align-items:flex-end">
+        <div>
+          <div style="font-size:7px;letter-spacing:4px;color:#3a3a3a;margin-bottom:2px">20-WEEK PROGRAM</div>
+          <div style="font-size:17px;font-weight:900;letter-spacing:-0.5px"><span style="color:${p.color}">CALISTHENICS</span></div>
+        </div>
+        <div style="text-align:right;font-size:8px;color:#3a3a3a;letter-spacing:1px;line-height:1.6">
+          MAY → SEP 8<br><span style="color:${p.color}">P${p.id}: ${p.name}</span>
+        </div>
+      </div>
+      <div class="tab-row">
+        ${['today','workout','diet','milestones'].map(t=>`<button class="tab-btn ${state.tab===t?'active':''}" data-tab="${t}">${t}</button>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildWorkout(){
+  const phase = getPhase(); const day = getDay();
+  const tag = TAG[day.tag];
+  return `
+    <div class="scroll-row" style="margin-bottom:14px">
+      ${PHASES.map((p,i)=>`<button class="phase-btn ${state.pi===i?'active':''}" data-pi="${i}" style="${state.pi===i?`border-color:${p.color};background:${p.bg}`:''}">
+        <div style="font-size:7px;letter-spacing:1px;color:${state.pi===i?p.color:'#3a3a3a'}">P${p.id}</div>
+        <div style="font-size:9px;font-weight:900;color:${state.pi===i?p.color:'#3a3a3a'};white-space:nowrap">${p.name}</div>
+      </button>`).join('')}
+    </div>
+    <div class="phase-blurb" style="background:${phase.bg};border:1px solid ${phase.color}1a;margin-bottom:12px">
+      <div style="font-size:7px;color:${phase.color};letter-spacing:2px;margin-bottom:3px">${phase.weeks}</div>
+      <div style="font-size:11px;color:#888;line-height:1.5">${phase.goal}</div>
+    </div>
+    <div class="scroll-row" style="margin-bottom:12px">
+      ${phase.days.map((d,i)=>`<button class="day-btn ${state.di===i?'active':''}" data-di="${i}" style="${state.di===i?`background:#111;border-color:${phase.color}`:''}">
+        <div style="font-size:7px;letter-spacing:1px;color:${state.di===i?phase.color:'#333'}">${d.label}</div>
+        <div style="font-size:9px;color:${state.di===i?'#ccc':'#333'};white-space:nowrap">${d.type.split(' ').slice(0,2).join(' ')}</div>
+      </button>`).join('')}
+    </div>
+    <div class="day-header">
+      <div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">
+          <span style="font-size:7px;color:#3a3a3a;letter-spacing:2px">${day.label}</span>
+          <span class="tag-badge" style="background:${tag.bg};color:${tag.text};border:1px solid ${tag.border}">${day.tag}</span>
+        </div>
+        <div style="font-size:16px;font-weight:900;line-height:1.2">${day.type}</div>
+      </div>
+      ${day.tag !== 'RECOVERY' ? `<div style="text-align:right">
+        <div style="font-size:7px;color:#3a3a3a;letter-spacing:1px">DEFAULT REST</div>
+        <div style="font-size:14px;color:${phase.color};font-weight:900">${{STRENGTH:90,SKILL:120,CONDITIONING:45}[day.tag]}s</div>
+      </div>` : ''}
+    </div>
+    ${day.exercises.map((ex,i) => buildExercise(ex,i)).join('')}
+    <div class="notes-box">
+      <div style="font-size:7px;letter-spacing:2px;color:#3a3a3a;margin-bottom:5px">COACH NOTES</div>
+      <div style="font-size:11px;color:#666;line-height:1.7">${day.notes}</div>
+    </div>
+    <div style="margin-top:10px;padding:11px 13px;background:#0a0a0a;border:1px solid #141414">
+      <div style="font-size:7px;letter-spacing:2px;color:#3a3a3a;margin-bottom:8px">REST GUIDE</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
+        ${[['STRENGTH','90s · heavy lifts'],['SKILL','120s · CNS work'],['CONDITIONING','45s · keep HR up'],['RECOVERY','No timer']].map(([t,d])=>`
+          <div class="rest-cell" style="background:${TAG[t].bg};border:1px solid ${TAG[t].border}22">
+            <div style="font-size:8px;color:${TAG[t].text};letter-spacing:1px;margin-bottom:2px">${t}</div>
+            <div style="font-size:9px;color:#555;line-height:1.4">${d}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function buildExercise(ex, i){
+  const phase = getPhase();
+  const key = `${state.pi}-${state.di}-${i}`;
+  const done = state.setsDone[key] || 0;
+  const total = parseInt(ex.sets) || 0;
+  const timer = state.timers[key];
+  const hasSets = total > 0 && ex.rest > 0;
+  const hasSearch = SEARCH[ex.name] !== undefined;
+
+  let setsHTML = '';
+  if(hasSets){
+    const dots = Array.from({length:total},(_,j)=>`<div class="dot ${j<done?'done':''}">${j+1}</div>`).join('');
+    const btn = done < total
+      ? `<button class="set-done-btn" data-key="${key}" data-rest="${ex.rest}" data-total="${total}">SET ${done+1} ✓</button>`
+      : `<div style="display:flex;align-items:center;gap:7px"><span class="complete-badge">✓ DONE</span><button class="reset-btn" data-reset="${key}">↺</button></div>`;
+    setsHTML = `<div class="set-dots">${dots}${btn}</div>`;
+  }
+
+  let timerHTML = '';
+  if(timer && timer.show && done < total){
+    timerHTML = buildTimerHTML(key, timer, phase.color);
+  }
+
+  return `<div class="ex-row" id="ex-${key}">
+    <div class="ex-top">
+      <div style="flex:1">
+        <div style="font-size:13px;color:${ex.name==='Warm-up'?'#555':'#ddd'};margin-bottom:4px;line-height:1.4">${ex.name}</div>
+        <div style="display:flex;gap:12px">
+          <span style="font-size:10px;color:#444">${ex.sets} sets</span>
+          <span style="font-size:10px;color:${phase.color}">× ${ex.reps}</span>
+          ${ex.rest>0?`<span style="font-size:9px;color:#333">rest ${ex.rest}s</span>`:''}
+        </div>
+      </div>
+      ${hasSearch ? `<button class="how-btn" data-exname="${encodeURIComponent(ex.name)}" data-exkey="${key}">
+        <span id="how-spin-${key}">▶</span> HOW
+      </button>` : ''}
+    </div>
+    ${setsHTML}
+    ${timerHTML}
+  </div>`;
+}
+
+function buildTimerHTML(key, timer, color){
+  const pct = timer.remaining / timer.secs;
+  const R = 28, circ = 2 * Math.PI * R;
+  const offset = circ * (1-pct);
+  const isDone = timer.remaining === 0;
+  return `<div class="timer-wrap ${timer.running?'running':''}" id="timer-${key}">
+    <div style="position:relative;width:64px;height:64px;flex-shrink:0">
+      <svg width="64" height="64" style="transform:rotate(-90deg)">
+        <circle cx="32" cy="32" r="${R}" fill="none" stroke="#1a1a1a" stroke-width="3.5"/>
+        <circle cx="32" cy="32" r="${R}" fill="none" stroke="${isDone?'#f87171':timer.running?color:'#333'}"
+          stroke-width="3.5" stroke-dasharray="${circ.toFixed(2)}" stroke-dashoffset="${offset.toFixed(2)}"
+          stroke-linecap="round" style="transition:stroke-dashoffset 1s linear,stroke 0.3s"/>
+      </svg>
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:${isDone?10:14}px;font-weight:900;color:${isDone?'#f87171':timer.running?color:'#555'};font-family:inherit">
+        ${isDone?'GO!':timer.remaining+'s'}
+      </div>
+    </div>
+    <div style="flex:1">
+      <div style="font-size:8px;letter-spacing:2px;color:#3a3a3a;margin-bottom:7px">REST TIMER</div>
+      <div class="timer-controls">
+        ${!isDone?`<button class="timer-btn ${timer.running?'timer-stop':'timer-start'}" data-taction="${timer.running?'pause':'start'}" data-tkey="${key}">
+          ${timer.running?'PAUSE':timer.remaining<timer.secs?'RESUME':'START'}
+        </button>`:''}
+        ${(isDone || (!timer.running && timer.remaining < timer.secs))?`<button class="timer-btn timer-adj" data-taction="reset" data-tkey="${key}">↺</button>`:''}
+        <button class="timer-btn timer-adj" data-taction="sub" data-tkey="${key}">−15s</button>
+        <button class="timer-btn timer-adj" data-taction="add" data-tkey="${key}">+15s</button>
+        <button class="timer-btn timer-close" data-taction="close" data-tkey="${key}">✕</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildModal(){
+  const {name, imgUrl, loading} = state.modal;
+  const ytLink = `https://www.youtube.com/results?search_query=${encodeURIComponent(name+' calisthenics tutorial')}`;
+  return `<div class="modal-overlay" id="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div style="font-size:11px;color:#999;max-width:85%;line-height:1.4">${name}</div>
+        <button class="modal-close" id="modal-close-btn">×</button>
+      </div>
+      ${loading ? `<div class="modal-noimg"><div style="font-size:28px">⏳</div><div>Loading...</div></div>`
+        : imgUrl ? `<img class="modal-img" src="${imgUrl}" alt="${name}">`
+        : `<div class="modal-noimg"><div style="font-size:32px">🏋️</div><div>No image found</div></div>`}
+      <a class="yt-link" href="${ytLink}" target="_blank">WATCH TUTORIAL ON YOUTUBE ↗</a>
+    </div>
+  </div>`;
+}
+
+function buildDiet(){
+  const items = [
+    {icon:"🔥",t:"Calories",v:"~2,200–2,400 kcal/day",d:"Your maintenance is ~2,700–2,900 kcal. A 400–500 kcal deficit is the sweet spot — losing fat without losing muscle."},
+    {icon:"🥩",t:"Protein",v:"150–165g / day",d:"~0.85g per lb bodyweight. Chicken, eggs, Greek yogurt, cottage cheese, fish. Non-negotiable on a cut."},
+    {icon:"🍚",t:"Carbs",v:"Around workouts",d:"Eat carbs before and after training. Oats, rice, fruit. Reduce carbs on rest days to naturally cycle calories."},
+    {icon:"🥑",t:"Fats",v:"50–70g / day",d:"Avocado, olive oil, nuts. Keep hormones healthy — critical for muscle building during a cut."},
+    {icon:"💧",t:"Water",v:"3–4 liters / day",d:"Hydration affects training performance, recovery, and how lean you look."},
+    {icon:"🚫",t:"Alcohol",v:"Minimize or cut",d:"Halts fat oxidation for 24–48 hours. The #1 hidden saboteur of summer body composition progress."},
+  ];
+  const meals = [
+    {t:"7am",m:"Breakfast",f:"4 eggs + 2 whites, 50g oats, black coffee"},
+    {t:"12pm",m:"Lunch",f:"200g chicken, 150g rice, large salad + olive oil"},
+    {t:"3pm",m:"Pre-workout",f:"200g Greek yogurt + banana + almonds"},
+    {t:"6pm",m:"Post-workout",f:"Protein shake (40g) + rice cakes"},
+    {t:"8pm",m:"Dinner",f:"200g salmon or lean beef, roasted veg, 100g sweet potato"},
+  ];
+  return `
+    <div style="font-size:7px;letter-spacing:3px;color:#3a3a3a;margin-bottom:10px">NUTRITION FRAMEWORK</div>
+    ${items.map(x=>`<div class="diet-card">
+      <span style="font-size:20px">${x.icon}</span>
+      <div>
+        <div style="font-size:7px;letter-spacing:2px;color:#3a3a3a;margin-bottom:2px">${x.t.toUpperCase()}</div>
+        <div style="font-size:13px;font-weight:900;color:#e0e0e0;margin-bottom:5px">${x.v}</div>
+        <div style="font-size:11px;color:#666;line-height:1.6">${x.d}</div>
+      </div>
+    </div>`).join('')}
+    <div style="margin-top:8px;padding:14px;background:#080f08;border:1px solid #162016">
+      <div style="font-size:7px;letter-spacing:2px;color:#4ade80;margin-bottom:10px">SAMPLE DAY · ~2,300 KCAL · ~160G PROTEIN</div>
+      ${meals.map((x,i)=>`<div style="display:grid;grid-template-columns:36px 88px 1fr;gap:9px;padding:8px 0;${i<meals.length-1?'border-bottom:1px solid #162016':''}">
+        <div style="font-size:9px;color:#4ade80">${x.t}</div>
+        <div style="font-size:8px;color:#666;letter-spacing:1px">${x.m.toUpperCase()}</div>
+        <div style="font-size:11px;color:#aaa;line-height:1.5">${x.f}</div>
+      </div>`).join('')}
+    </div>
+  `;
+}
+
+function buildMilestones(){
+  const milestones = [
+    {w:"Week 4",c:"#4ade80",t:"10 clean pull-ups, 30s L-sit tuck, 20s wall handstand"},
+    {w:"Week 8",c:"#60a5fa",t:"Chest-to-bar pull-ups, freestanding HS kick-up, tuck flag 8s"},
+    {w:"Week 12",c:"#f97316",t:"First muscle-up attempt, 5s freestanding HS, visible ab definition beginning"},
+    {w:"Week 16",c:"#f97316",t:"3+ clean muscle-ups, 8s freestanding HS, straddle flag, 4-pack visible"},
+    {w:"Week 20",c:"#e879f9",t:"5+ muscle-ups, 10s+ freestanding HS, full/straddle flag, unrecognizable physique"},
+  ];
+  const ladders = [
+    {s:"Muscle-up",c:"#4ade80",steps:["Chest-to-bar","Explosive pull","Negative MU","Full MU","5+ reps"]},
+    {s:"Handstand",c:"#60a5fa",steps:["Wall 20s","Wall 45s","Kick-up","5s free","10s+ free"]},
+    {s:"Human Flag",c:"#e879f9",steps:["Tuck 5s","Tuck 10s","One leg","Straddle","Full flag"]},
+    {s:"L-sit",c:"#f97316",steps:["Tuck 10s","L-sit 10s","L-sit 20s","→ HS","Advanced"]},
+  ];
+  return `
+    <div style="font-size:7px;letter-spacing:3px;color:#3a3a3a;margin-bottom:6px">CHECKPOINT TARGETS</div>
+    <div style="font-size:11px;color:#666;line-height:1.7;margin-bottom:16px">Film yourself every Friday. The 4-week comparison is shocking.</div>
+    <div style="position:relative">
+      <div style="position:absolute;left:74px;top:14px;bottom:14px;width:1px;background:#141414"></div>
+      ${milestones.map(m=>`<div class="milestone-row">
+        <div style="width:62px;padding-top:13px;text-align:right;flex-shrink:0">
+          <div style="font-size:7px;color:${m.c};letter-spacing:1px">${m.w.toUpperCase()}</div>
+        </div>
+        <div class="milestone-dot" style="background:${m.c};box-shadow:0 0 7px ${m.c}55"></div>
+        <div class="milestone-card">${m.t}</div>
+      </div>`).join('')}
+    </div>
+    <div style="margin-top:6px;padding:14px;background:#0a0a0a;border:1px solid #161616">
+      <div style="font-size:7px;letter-spacing:2px;color:#3a3a3a;margin-bottom:12px">SKILL PROGRESSION LADDERS</div>
+      ${ladders.map(x=>`<div style="margin-bottom:13px">
+        <div style="font-size:8px;color:${x.c};letter-spacing:2px;margin-bottom:5px">${x.s.toUpperCase()}</div>
+        <div class="ladder-row">
+          ${x.steps.map((st,j)=>`
+            <div style="display:flex;align-items:center;gap:3px;flex-shrink:0">
+              <div class="ladder-step" style="background:${j<=2?x.c+'15':'transparent'};border:1px solid ${j<=2?x.c+'44':'#1a1a1a'};color:${j<=2?x.c:'#2a2a2a'}">${st}</div>
+              ${j<4?`<div style="font-size:8px;color:#1e1e1e">›</div>`:''}
+            </div>`).join('')}
+        </div>
+      </div>`).join('')}
+      <div style="font-size:8px;color:#2e2e2e;border-top:1px solid #141414;padding-top:8px;margin-top:2px">Highlighted = achievable in 20 weeks</div>
+    </div>
+  `;
+}
+
+// ── EVENTS ────────────────────────────────────────────────────────────────────
+function attachEvents(){
+  document.querySelectorAll('[data-tab]').forEach(el=>el.addEventListener('click',()=>{
+    state.tab = el.dataset.tab; render();
+  }));
+  document.querySelectorAll('[data-pi]').forEach(el=>el.addEventListener('click',()=>{
+    state.pi = +el.dataset.pi; state.di = 0; render();
+  }));
+  document.querySelectorAll('[data-di]').forEach(el=>el.addEventListener('click',()=>{
+    state.di = +el.dataset.di; render();
+  }));
+
+  // Set done
+  document.querySelectorAll('[data-key]').forEach(el=>el.addEventListener('click',()=>{
+    const key = el.dataset.key;
+    const rest = +el.dataset.rest;
+    const total = +el.dataset.total;
+    state.setsDone[key] = (state.setsDone[key]||0)+1;
+    if(state.setsDone[key] < total && rest > 0){
+      state.timers[key] = {show:true, secs:rest, remaining:rest, running:false};
+      startTimerAuto(key);
+    }
+    render();
+  }));
+
+  // Reset set
+  document.querySelectorAll('[data-reset]').forEach(el=>el.addEventListener('click',()=>{
+    const key = el.dataset.reset;
+    delete state.setsDone[key];
+    if(timerIntervals[key]){ clearInterval(timerIntervals[key]); delete timerIntervals[key]; }
+    delete state.timers[key];
+    render();
+  }));
+
+  // Timer actions
+  document.querySelectorAll('[data-taction]').forEach(el=>el.addEventListener('click',()=>{
+    const key = el.dataset.tkey;
+    const action = el.dataset.taction;
+    const t = state.timers[key];
+    if(!t) return;
+    if(action==='start'||action==='resume'){ startTimer(key); }
+    else if(action==='pause'){ pauseTimer(key); }
+    else if(action==='reset'){ resetTimer(key); }
+    else if(action==='sub'){ t.secs = Math.max(10, t.secs-15); if(!t.running) t.remaining = t.secs; render(); }
+    else if(action==='add'){ t.secs = t.secs+15; if(!t.running) t.remaining = t.secs; render(); }
+    else if(action==='close'){ pauseTimer(key); t.show = false; render(); }
+  }));
+
+  // How btn
+  document.querySelectorAll('[data-exname]').forEach(el=>el.addEventListener('click',async()=>{
+    const name = decodeURIComponent(el.dataset.exname);
+    const key = el.dataset.exkey;
+    if(imgCache[name] !== undefined){
+      state.modal = {name, imgUrl: imgCache[name], loading:false};
+      render(); return;
+    }
+    state.modal = {name, imgUrl:null, loading:true};
+    render();
+    const term = SEARCH[name];
+    let url = null;
+    if(term){
+      try{
+        const r1 = await fetch(`https://wger.de/api/v2/exercise/search/?term=${encodeURIComponent(term)}&language=english&format=json`);
+        const d1 = await r1.json();
+        const id = d1.suggestions?.[0]?.data?.id;
+        if(id){
+          const r2 = await fetch(`https://wger.de/api/v2/exerciseimage/?exercise_base=${id}&format=json`);
+          const d2 = await r2.json();
+          if(d2.results?.length) url = d2.results[0].image;
+        }
+      }catch(e){}
+    }
+    imgCache[name] = url;
+    if(state.modal && state.modal.name === name){
+      state.modal = {name, imgUrl:url, loading:false};
+      render();
+    }
+  }));
+
+
+  // Today goto buttons
+  document.querySelectorAll('[data-goto-phase]').forEach(el=>el.addEventListener('click',()=>{
+    state.pi = +el.dataset.gotoPhase;
+    state.di = +el.dataset.gotoDay;
+    state.tab = 'workout';
+    render();
+    window.scrollTo(0,0);
+  }));
+
+  // Modal close
+  const overlay = document.getElementById('modal-overlay');
+  if(overlay) overlay.addEventListener('click', e => {
+    if(e.target === overlay || e.target.id === 'modal-close-btn'){ state.modal = null; render(); }
+  });
+}
+
+function startTimerAuto(key){
+  const t = state.timers[key];
+  if(!t) return;
+  t.running = true;
+  if(timerIntervals[key]) clearInterval(timerIntervals[key]);
+  timerIntervals[key] = setInterval(()=>{
+    const tm = state.timers[key];
+    if(!tm || !tm.running){ clearInterval(timerIntervals[key]); return; }
+    tm.remaining--;
+    if(tm.remaining <= 0){ tm.remaining = 0; tm.running = false; clearInterval(timerIntervals[key]); }
+    // Patch just the timer DOM instead of full re-render for smoothness
+    patchTimer(key);
+  }, 1000);
+}
+
+function startTimer(key){
+  const t = state.timers[key];
+  if(!t) return;
+  t.running = true;
+  render();
+  startTimerAuto(key);
+}
+
+function pauseTimer(key){
+  if(timerIntervals[key]){ clearInterval(timerIntervals[key]); delete timerIntervals[key]; }
+  const t = state.timers[key];
+  if(t) t.running = false;
+  render();
+}
+
+function resetTimer(key){
+  if(timerIntervals[key]){ clearInterval(timerIntervals[key]); delete timerIntervals[key]; }
+  const t = state.timers[key];
+  if(t){ t.remaining = t.secs; t.running = false; }
+  render();
+}
+
+function patchTimer(key){
+  const t = state.timers[key];
+  if(!t) return;
+  const wrap = document.getElementById(`timer-${key}`);
+  if(!wrap){ render(); return; }
+  const color = pc();
+  const pct = t.remaining / t.secs;
+  const R = 28, circ = 2 * Math.PI * R;
+  const offset = circ * (1-pct);
+  const isDone = t.remaining === 0;
+  const arc = wrap.querySelector('circle:last-child');
+  const label = wrap.querySelector('.timer-label');
+  if(arc){
+    arc.setAttribute('stroke-dashoffset', offset.toFixed(2));
+    arc.setAttribute('stroke', isDone ? '#f87171' : color);
+  }
+  // Re-render timer portion if done for GO! text
+  if(isDone) render();
+  else {
+    const txt = wrap.querySelector('.timer-text');
+    if(txt) txt.textContent = t.remaining + 's';
+  }
+}
+
+
+// ── SCHEDULE ─────────────────────────────────────────────────────────────────
+// Program: May 1 2025 → Sep 7 2025 (last day before Sep 8 school)
+// Week schedule: Mon=D1, Tue=D2, Wed=D3, Thu=REST, Fri=D4, Sat=D5, Sun=REST
+const PROGRAM_START = new Date(2026, 3, 18); // Apr 18 2026
+const PROGRAM_END   = new Date(2026, 8, 7); // Sep 7 2026
+
+// Day-of-week → workout slot (0=Sun,1=Mon,...,6=Sat)
+// Mon(1)=D1, Tue(2)=D2, Wed(3)=D3, Thu(4)=REST, Fri(5)=D4(recovery), Sat(6)=D5, Sun(0)=REST
+const DOW_MAP = {1:0, 2:1, 3:2, 5:3, 6:4}; // dow -> dayIndex (0-based)
+// Phase boundaries by week number (week 1 = May 1 week)
+// Phase 1: weeks 1-5, Phase 2: 6-10, Phase 3: 11-15, Phase 4: 16-20
+
+function getDateInfo(date) {
+  const d = new Date(date); d.setHours(0,0,0,0);
+  const start = new Date(PROGRAM_START); start.setHours(0,0,0,0);
+  const end = new Date(PROGRAM_END); end.setHours(0,0,0,0);
+  if(d < start || d > end) return null;
+  const daysSince = Math.floor((d - start) / 86400000);
+  const weekNum = Math.floor(daysSince / 7) + 1; // 1-indexed
+  const phaseIdx = daysSince < 39 ? 0 : daysSince < 74 ? 1 : daysSince < 109 ? 2 : 3;
+  const dow = d.getDay();
+  const dayIdx = DOW_MAP[dow];
+  if(dayIdx === undefined) return {phaseIdx, weekNum, isRest:true, dow};
+  return {phaseIdx, weekNum, dayIdx, isRest:false, dow};
+}
+
+function getTodayInfo() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  return getDateInfo(today);
+}
+
+function buildToday() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const info = getTodayInfo();
+  const todayPhase = info && !info.isRest ? PHASES[info.phaseIdx] : null;
+  const todayDay = todayPhase ? todayPhase.days[info.dayIdx] : null;
+  const TAG = {STRENGTH:{bg:"#0a1a10",text:"#4ade80",border:"#134d23"},SKILL:{bg:"#0a0a20",text:"#818cf8",border:"#2d2b7a"},CONDITIONING:{bg:"#1a0d00",text:"#fb923c",border:"#7c2d12"},RECOVERY:{bg:"#0a1520",text:"#38bdf8",border:"#075985"}};
+
+  // Days until program ends
+  const end = new Date(PROGRAM_END);
+  const daysLeft = Math.ceil((end - today) / 86400000);
+  const daysTotal = Math.ceil((end - PROGRAM_START) / 86400000);
+  const pctDone = Math.max(0, Math.min(100, Math.round(((daysTotal - daysLeft) / daysTotal) * 100)));
+
+  const dayNames = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  // Build week strip (Mon-Sun of current week)
+  const dow = today.getDay();
+  const monday = new Date(today); monday.setDate(today.getDate() - ((dow+6)%7));
+  let weekCells = '';
+  for(let i=0;i<7;i++){
+    const d = new Date(monday); d.setDate(monday.getDate()+i);
+    const isToday = d.getTime()===today.getTime();
+    const dInfo = getDateInfo(d);
+    const beforeProg = d < PROGRAM_START;
+    const afterProg = d > PROGRAM_END;
+    let cls = 'week-cell';
+    let label = '—'; let sublabel = '';
+    if(beforeProg||afterProg){ cls+=' before-program'; }
+    else if(!dInfo){ cls+=' before-program'; }
+    else if(dInfo.isRest){ cls+=' rest-day'; label='REST'; }
+    else {
+      const ph = PHASES[dInfo.phaseIdx];
+      const dy = ph.days[dInfo.dayIdx];
+      cls += ' workout-day';
+      label = dy.label;
+      sublabel = dy.type.split(' ').slice(0,1).join('');
+    }
+    if(isToday) cls+=' today';
+    const isPast = d < today;
+    if(isPast && !isToday) cls+=' past';
+    const isFuture = d > today;
+    if(isFuture) cls+=' future';
+
+    const dInfo2 = getDateInfo(d);
+    const clickAttr = (dInfo2 && !dInfo2.isRest && !beforeProg && !afterProg)
+      ? `data-goto-phase="${dInfo2.phaseIdx}" data-goto-day="${dInfo2.dayIdx}"` : '';
+
+    weekCells += `<div class="${cls}" ${clickAttr}>
+      <div style="font-size:7px;letter-spacing:1px;color:${isToday?'var(--pc)':'#3a3a3a'}">${dayNames[d.getDay()]}</div>
+      <div style="font-size:11px;font-weight:900;color:${isToday?'var(--pc)':'#555'};margin:2px 0">${d.getDate()}</div>
+      <div style="font-size:7px;color:${isToday?'var(--pc)':'#2e2e2e'};letter-spacing:0.5px">${label}</div>
+    </div>`;
+  }
+
+  // Hero card
+  let heroContent = '';
+  const pc2 = info && info.phaseIdx !== undefined ? PHASES[info.phaseIdx].color : '#555';
+
+  if(!info) {
+    const isPre = today < PROGRAM_START;
+    const daysTo = isPre ? Math.ceil((PROGRAM_START - today)/86400000) : 0;
+    heroContent = `
+      <div style="font-size:8px;letter-spacing:3px;color:#555;margin-bottom:8px">PROGRAM STATUS</div>
+      <div style="font-size:22px;font-weight:900;color:#555;margin-bottom:6px">${isPre?'NOT STARTED YET':'PROGRAM COMPLETE'}</div>
+      <div style="font-size:12px;color:#555;line-height:1.6">${isPre?`Starts in ${daysTo} day${daysTo!==1?'s':''}. First workout: Apr 18th.`:'You made it to September 8th. Time to be unrecognizable.'}</div>`;
+  } else if(info.isRest) {
+    heroContent = `
+      <div style="font-size:8px;letter-spacing:3px;color:#38bdf8;margin-bottom:8px">TODAY · ${dayNames[today.getDay()]} ${today.getDate()} ${months[today.getMonth()].toUpperCase()}</div>
+      <div style="font-size:22px;font-weight:900;color:#38bdf8;margin-bottom:6px">REST DAY 🛋️</div>
+      <div style="font-size:12px;color:#666;line-height:1.6">Week ${info.weekNum} of 20. Recovery is where growth happens — don't skip it. Eat your protein, sleep 8 hours.</div>`;
+  } else {
+    const ph = PHASES[info.phaseIdx];
+    const dy = ph.days[info.dayIdx];
+    const tg = TAG[dy.tag]||TAG.STRENGTH;
+    heroContent = `
+      <div style="font-size:8px;letter-spacing:3px;color:${ph.color};margin-bottom:8px">TODAY · ${dayNames[today.getDay()]} ${today.getDate()} ${months[today.getMonth()].toUpperCase()}</div>
+      <div style="font-size:9px;color:#444;letter-spacing:2px;margin-bottom:4px">WEEK ${info.weekNum} OF 20 · PHASE ${ph.id}: ${ph.name}</div>
+      <div style="font-size:24px;font-weight:900;color:${ph.color};line-height:1;margin-bottom:6px">${dy.label}</div>
+      <div style="font-size:15px;color:#ccc;margin-bottom:10px">${dy.type}</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <span style="font-size:8px;letter-spacing:1px;padding:3px 8px;background:${tg.bg};color:${tg.text};border:1px solid ${tg.border}">${dy.tag}</span>
+        <span style="font-size:10px;color:#555">${dy.exercises.filter(e=>parseInt(e.sets)>0).length} exercises</span>
+      </div>
+      <button class="today-goto" data-goto-phase="${info.phaseIdx}" data-goto-day="${info.dayIdx}" style="background:${ph.color}18;border:1px solid ${ph.color}44;color:${ph.color}">
+        GO TO TODAY'S WORKOUT →
+      </button>`;
+  }
+
+  // Progress bar
+  const progBar = info ? `
+    <div style="margin-bottom:14px;padding:11px 13px;background:#0a0a0a;border:1px solid #141414">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <div style="font-size:8px;letter-spacing:2px;color:#3a3a3a">PROGRAM PROGRESS</div>
+        <div style="font-size:8px;color:${pc2}">${pctDone}%</div>
+      </div>
+      <div style="height:4px;background:#141414;border-radius:2px;overflow:hidden">
+        <div style="height:100%;width:${pctDone}%;background:${pc2};border-radius:2px;transition:width 0.5s"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:5px">
+        <div style="font-size:8px;color:#2e2e2e">Apr 18</div>
+        <div style="font-size:9px;color:#555">${daysLeft > 0 ? daysLeft+' days left' : 'Program ended'}</div>
+        <div style="font-size:8px;color:#2e2e2e">Sep 7</div>
+      </div>
+    </div>` : '';
+
+  // Upcoming workouts (next 5 workout days)
+  let upcoming = '';
+  let found = 0; let check = new Date(today); check.setDate(check.getDate()+1);
+  let rows = '';
+  while(found < 4 && check <= PROGRAM_END) {
+    const ci = getDateInfo(check);
+    if(ci && !ci.isRest) {
+      const ph = PHASES[ci.phaseIdx];
+      const dy = ph.days[ci.dayIdx];
+      const diffDays = Math.ceil((check-today)/86400000);
+      const label = diffDays===1?'Tomorrow':`${dayNames[check.getDay()]} ${check.getDate()} ${months[check.getMonth()]}`;
+      rows += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #0e0e0e">
+        <div>
+          <div style="font-size:9px;color:#555;margin-bottom:2px">${label}</div>
+          <div style="font-size:12px;color:#ccc">${dy.label} · ${dy.type}</div>
+        </div>
+        <div style="font-size:8px;color:${ph.color};letter-spacing:1px;text-align:right">
+          P${ph.id}<br><span style="font-size:7px;color:#3a3a3a">${ph.name}</span>
+        </div>
+      </div>`;
+      found++;
+    }
+    check.setDate(check.getDate()+1);
+  }
+
+  const upcomingSection = rows ? `
+    <div style="padding:11px 13px;background:#0a0a0a;border:1px solid #141414;margin-bottom:14px">
+      <div style="font-size:7px;letter-spacing:2px;color:#3a3a3a;margin-bottom:8px">COMING UP</div>
+      ${rows}
+    </div>` : '';
+
+  // Weekly schedule legend
+  const scheduleLegend = `
+    <div style="padding:11px 13px;background:#0a0a0a;border:1px solid #141414">
+      <div style="font-size:7px;letter-spacing:2px;color:#3a3a3a;margin-bottom:8px">WEEKLY SCHEDULE</div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center">
+        ${[['MON','D1'],['TUE','D2'],['WED','D3'],['THU','REST'],['FRI','D4'],['SAT','D5'],['SUN','REST']].map(([d,w])=>`
+          <div style="padding:5px 2px;background:${w==='REST'?'transparent':'#111'};border:1px solid ${w==='REST'?'#111':'#1e1e1e'}">
+            <div style="font-size:7px;color:#3a3a3a;letter-spacing:0.5px">${d}</div>
+            <div style="font-size:9px;color:${w==='REST'?'#2a2a2a':'var(--pc)'};margin-top:1px">${w}</div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+
+  return `
+    <div style="--pc22:${pc2}22;--pc0d:${pc2}0d">
+      <div class="today-hero" style="--pbg:${info&&!info.isRest?PHASES[info.phaseIdx].bg:'#0a0a0a'};--pc:${pc2}">
+        ${heroContent}
+      </div>
+      ${progBar}
+      <div style="font-size:7px;letter-spacing:2px;color:#3a3a3a;margin-bottom:6px">THIS WEEK</div>
+      <div class="week-strip">${weekCells}</div>
+      ${upcomingSection}
+      ${scheduleLegend}
+    </div>`;
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
