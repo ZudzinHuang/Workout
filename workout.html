@@ -308,7 +308,72 @@ const SEARCH = {
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 let state = { pi:0, di:0, tab:"today", modal:null, setsDone:{}, timers:{}, holdTimers:{} };
-let timerIntervals = {};
+// ── TIMER ENGINE (requestAnimationFrame + timestamps, throttle-proof) ────────
+// Each active timer stores: { secs, remaining, running, startedAt, startRemaining }
+// When running: remaining = startRemaining - (Date.now() - startedAt) / 1000
+// This means Chrome throttling the rAF loop never causes drift — we always read
+// the real wall clock.
+
+let rafId = null;
+const activeTimers = {}; // key -> true (just tracks which keys are animating)
+
+function getTimerObj(key) {
+  if(key.startsWith('hold-')) return state.holdTimers[key.slice(5)];
+  return state.timers[key];
+}
+
+function tickAll() {
+  rafId = requestAnimationFrame(tickAll);
+  let anyRunning = false;
+  const allKeys = [
+    ...Object.keys(state.timers).map(k => k),
+    ...Object.keys(state.holdTimers).map(k => 'hold-' + k),
+  ];
+  for(const key of allKeys) {
+    const t = getTimerObj(key);
+    if(!t || !t.running) continue;
+    anyRunning = true;
+    const elapsed = (Date.now() - t.startedAt) / 1000;
+    const newRemaining = Math.max(0, t.startRemaining - elapsed);
+    const prevRemaining = t.remaining;
+    t.remaining = newRemaining;
+    if(newRemaining <= 0 && prevRemaining > 0) {
+      t.remaining = 0;
+      t.running = false;
+      render(); // trigger GO!/DONE! state
+      continue;
+    }
+    // Patch DOM every ~100ms for smooth SVG arc, only re-render on second boundaries
+    const prevSec = Math.ceil(prevRemaining);
+    const nowSec = Math.ceil(newRemaining);
+    if(nowSec !== prevSec) {
+      patchTimerDOM(key, t);
+    }
+  }
+}
+
+function startRaf() {
+  if(!rafId) rafId = requestAnimationFrame(tickAll);
+}
+
+function patchTimerDOM(key, t) {
+  const wrap = document.getElementById('timer-' + key);
+  if(!wrap) { render(); return; }
+  const color = pc();
+  const isHold = key.startsWith('hold-');
+  const pct = t.remaining / t.secs;
+  const R = 28, circ = 2 * Math.PI * R;
+  const offset = (circ * (1 - pct)).toFixed(2);
+  const sec = Math.ceil(t.remaining);
+  const doneColor = isHold ? '#facc15' : '#f87171';
+  const arc = wrap.querySelector('circle:last-child');
+  const numEl = wrap.querySelector('.timer-num');
+  if(arc) {
+    arc.setAttribute('stroke-dashoffset', offset);
+    arc.setAttribute('stroke', t.running ? color : '#333');
+  }
+  if(numEl) numEl.textContent = sec + 's';
+}
 const imgCache = {};
 
 function getPhase(){ return PHASES[state.pi]; }
@@ -467,7 +532,7 @@ function buildExercise(ex, i){
   let holdHTML = '';
   if(hasHold){
     if(holdTimer && holdTimer.show){
-      holdHTML = buildTimerHTML('hold-'+key, holdTimer, phase.color, 'HOLD TIMER', false);
+      holdHTML = buildTimerHTML('hold-'+key, holdTimer, phase.color, 'HOLD TIMER', true);
     } else {
       holdHTML = `<div style="margin-top:7px">
         <button class="hold-start-btn" data-holdkey="${key}" data-holdsecs="${holdSecs}"
@@ -529,8 +594,8 @@ function buildTimerHTML(key, timer, color, label, showClose){
           stroke-width="3.5" stroke-dasharray="${circ.toFixed(2)}" stroke-dashoffset="${offset.toFixed(2)}"
           stroke-linecap="round" style="transition:stroke-dashoffset 1s linear,stroke 0.3s"/>
       </svg>
-      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:${isDone?10:14}px;font-weight:900;color:${isDone?doneColor:timer.running?color:'#555'};font-family:inherit">
-        ${isDone?doneText:timer.remaining+'s'}
+      <div class="timer-num" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:${isDone?10:14}px;font-weight:900;color:${isDone?doneColor:timer.running?color:'#555'};font-family:inherit">
+        ${isDone?doneText:Math.ceil(timer.remaining)+'s'}
       </div>
     </div>
     <div style="flex:1">
@@ -683,10 +748,7 @@ function attachEvents(){
   document.querySelectorAll('[data-reset]').forEach(el=>el.addEventListener('click',()=>{
     const key = el.dataset.reset;
     delete state.setsDone[key];
-    if(timerIntervals[key]){ clearInterval(timerIntervals[key]); delete timerIntervals[key]; }
-    const bxK = 'bx-'+key; const holdK = 'hold-'+key;
-    if(timerIntervals[bxK]){ clearInterval(timerIntervals[bxK]); delete timerIntervals[bxK]; }
-    if(timerIntervals[holdK]){ clearInterval(timerIntervals[holdK]); delete timerIntervals[holdK]; }
+    const bxK = 'bx-'+key;
     delete state.timers[key]; delete state.timers[bxK]; delete state.holdTimers[key];
     render();
   }));
@@ -703,8 +765,19 @@ function attachEvents(){
     if(action==='start'||action==='resume'){ startTimer(key, isHold); }
     else if(action==='pause'){ pauseTimer(key, isHold); }
     else if(action==='reset'){ resetTimer(key, isHold); }
-    else if(action==='sub'){ t.secs = Math.max(5, t.secs-15); if(!t.running) t.remaining = t.secs; render(); }
-    else if(action==='add'){ t.secs = t.secs+15; if(!t.running) t.remaining = t.secs; render(); }
+    else if(action==='sub'||action==='add'){
+      const delta = action==='sub' ? -15 : 15;
+      // Snapshot current remaining from wall clock before mutating
+      if(t.running && t.startedAt){
+        const elapsed = (Date.now() - t.startedAt) / 1000;
+        t.remaining = Math.max(0, t.startRemaining - elapsed);
+      }
+      t.secs = Math.max(5, t.secs + delta);
+      t.remaining = Math.max(0, Math.min(t.secs, t.remaining + delta));
+      // Reset the rAF anchor so elapsed is measured from now
+      if(t.running){ t.startedAt = Date.now(); t.startRemaining = t.remaining; }
+      render();
+    }
     else if(action==='close'){
       pauseTimer(key, isHold);
       if(isHold){ state.holdTimers[realKey] = {show:false,secs:t.secs,remaining:t.secs,running:false}; }
@@ -775,17 +848,14 @@ function getTimerStore(key){
   return state.timers[key];
 }
 function startTimerAuto(key, isHold){
-  const t = isHold ? state.holdTimers[key.replace('hold-','')] : state.timers[key];
+  const realKey = isHold ? key.replace('hold-','') : key;
+  const store = isHold ? state.holdTimers : state.timers;
+  const t = store[realKey];
   if(!t) return;
   t.running = true;
-  if(timerIntervals[key]) clearInterval(timerIntervals[key]);
-  timerIntervals[key] = setInterval(()=>{
-    const tm = isHold ? state.holdTimers[key.replace('hold-','')] : state.timers[key];
-    if(!tm || !tm.running){ clearInterval(timerIntervals[key]); return; }
-    tm.remaining--;
-    if(tm.remaining <= 0){ tm.remaining = 0; tm.running = false; clearInterval(timerIntervals[key]); }
-    patchTimer(key);
-  }, 1000);
+  t.startedAt = Date.now();
+  t.startRemaining = t.remaining;
+  startRaf();
 }
 
 function startTimer(key, isHold){
@@ -794,51 +864,36 @@ function startTimer(key, isHold){
   const t = store[realKey];
   if(!t) return;
   t.running = true;
+  t.startedAt = Date.now();
+  t.startRemaining = t.remaining;
+  startRaf();
   render();
-  startTimerAuto(key, isHold);
 }
 
 function pauseTimer(key, isHold){
-  if(timerIntervals[key]){ clearInterval(timerIntervals[key]); delete timerIntervals[key]; }
   const realKey = isHold ? key.slice(5) : key;
   const store = isHold ? state.holdTimers : state.timers;
   const t = store[realKey];
-  if(t) t.running = false;
+  if(t) {
+    // Snapshot remaining before stopping so resume is accurate
+    if(t.running && t.startedAt) {
+      const elapsed = (Date.now() - t.startedAt) / 1000;
+      t.remaining = Math.max(0, t.startRemaining - elapsed);
+    }
+    t.running = false;
+  }
   render();
 }
 
 function resetTimer(key, isHold){
-  if(timerIntervals[key]){ clearInterval(timerIntervals[key]); delete timerIntervals[key]; }
   const realKey = isHold ? key.slice(5) : key;
   const store = isHold ? state.holdTimers : state.timers;
   const t = store[realKey];
-  if(t){ t.remaining = t.secs; t.running = false; }
+  if(t){ t.remaining = t.secs; t.running = false; t.startedAt = null; }
   render();
 }
 
-function patchTimer(key){
-  const t = state.timers[key];
-  if(!t) return;
-  const wrap = document.getElementById(`timer-${key}`);
-  if(!wrap){ render(); return; }
-  const color = pc();
-  const pct = t.remaining / t.secs;
-  const R = 28, circ = 2 * Math.PI * R;
-  const offset = circ * (1-pct);
-  const isDone = t.remaining === 0;
-  const arc = wrap.querySelector('circle:last-child');
-  const label = wrap.querySelector('.timer-label');
-  if(arc){
-    arc.setAttribute('stroke-dashoffset', offset.toFixed(2));
-    arc.setAttribute('stroke', isDone ? '#f87171' : color);
-  }
-  // Re-render timer portion if done for GO! text
-  if(isDone) render();
-  else {
-    const txt = wrap.querySelector('.timer-text');
-    if(txt) txt.textContent = t.remaining + 's';
-  }
-}
+// patchTimer replaced by patchTimerDOM in rAF engine above
 
 
 // ── SCHEDULE ─────────────────────────────────────────────────────────────────
@@ -1036,6 +1091,7 @@ function buildToday() {
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
+startRaf();
 render();
 </script>
 </body>
